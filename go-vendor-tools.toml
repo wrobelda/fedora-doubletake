@@ -1,0 +1,26 @@
+[archive]
+
+[archive.dependency_overrides]
+"howett.net/plist" = "v1.0.2-0.20260819222228-760f9a56c6a7"
+[licensing]
+detector = "askalono"
+[[licensing.licenses]]
+path = "vendor/howett.net/plist/LICENSE"
+sha256sum = "20d9b7d9372369484ecadae229d3e3efee8029b259e11c9a1b07d2e0a3c82e39"
+expression = "BSD-2-Clause-Views AND BSD-3-Clause"
+
+[[licensing.licenses]]
+path = "vendor/github.com/miekg/dns/COPYRIGHT"
+sha256sum = "66550c0ad5ca7ec1e08683e5f872cc45c741f311eee3b8ee484206ecbf9c740d"
+expression = "BSD-3-Clause"
+
+[[licensing.licenses]]
+path = "LICENSE"
+sha256sum = "e3a994d82e644b03a792a930f574002658412f62407f5fee083f2555c5f23118"
+expression = "LGPL-3.0-or-later"
+
+# The GPL text that LGPL-3.0 incorporates; doubletake is LGPL-3.0-or-later.
+[[licensing.licenses]]
+path = "COPYING.GPL"
+sha256sum = "3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986"
+expression = "LGPL-3.0-or-later"
