@@ -1,0 +1,117 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Dawid=20Wr=C3=B3bel?= <me@dawidwrobel.com>
+Date: Wed, 4 Nov 2026 21:02:33 +0100
+Subject: [PATCH] Ship a systemd user unit for the daemon
+
+Users and distribution packagers each had to write their own unit.
+Ship the unit with package instead and install it with make install.
+---
+ Makefile                      | 12 ++++++++++--
+ README.md                     |  2 +-
+ plasmoid/README.md            | 17 +----------------
+ systemd/doubletake.service.in | 11 +++++++++++
+ 4 files changed, 23 insertions(+), 19 deletions(-)
+ create mode 100644 systemd/doubletake.service.in
+
+diff --git a/Makefile b/Makefile
+index 161b4ae..18e197e 100644
+--- a/Makefile
++++ b/Makefile
+@@ -1,7 +1,8 @@
+-.PHONY: all build doubletake doubletake-ctl doubletake-test-receiver doubletake-release doubletake-ctl-release doubletake-test-receiver-release manpages-release install install-man uninstall test clean
++.PHONY: all build doubletake doubletake-ctl doubletake-test-receiver doubletake-release doubletake-ctl-release doubletake-test-receiver-release manpages-release install install-man install-systemd uninstall test clean
+ 
+ PREFIX ?= /usr/local
+ MANDIR ?= $(PREFIX)/share/man
++SYSTEMDUSERDIR ?= $(PREFIX)/lib/systemd/user
+ 
+ all: doubletake doubletake-ctl doubletake-test-receiver
+ 
+@@ -31,7 +32,7 @@ manpages-release:
+ test:
+ 	go test ./...
+ 
+-install: all install-man
++install: all install-man install-systemd
+ 	install -m 755 bin/doubletake $(PREFIX)/bin/
+ 	install -m 755 bin/doubletake-ctl $(PREFIX)/bin/
+ 	install -m 755 bin/doubletake-test-receiver $(PREFIX)/bin/
+@@ -42,6 +43,12 @@ install-man:
+ 	install -m 644 man/man1/doubletake-ctl.1 $(MANDIR)/man1/
+ 	install -m 644 man/man1/doubletake-test-receiver.1 $(MANDIR)/man1/
+ 
++install-systemd:
++	mkdir -p bin
++	sed 's|@bindir@|$(PREFIX)/bin|' systemd/doubletake.service.in > bin/doubletake.service
++	install -d $(SYSTEMDUSERDIR)
++	install -m 644 bin/doubletake.service $(SYSTEMDUSERDIR)/
++
+ uninstall:
+ 	rm -f $(PREFIX)/bin/doubletake
+ 	rm -f $(PREFIX)/bin/doubletake-ctl
+@@ -49,6 +56,7 @@ uninstall:
+ 	rm -f $(MANDIR)/man1/doubletake.1
+ 	rm -f $(MANDIR)/man1/doubletake-ctl.1
+ 	rm -f $(MANDIR)/man1/doubletake-test-receiver.1
++	rm -f $(SYSTEMDUSERDIR)/doubletake.service
+ 
+ clean:
+ 	rm -rf bin/
+diff --git a/README.md b/README.md
+index 7d94c55..e15ddce 100644
+--- a/README.md
++++ b/README.md
+@@ -88,7 +88,7 @@ sudo make install
+ Use a custom prefix if needed:
+ 
+ ```sh
+-make install PREFIX=$HOME/.local
++make install PREFIX=$HOME/.local SYSTEMDUSERDIR=$HOME/.local/share/systemd/user
+ ```
+ 
+ Uninstall:
+diff --git a/plasmoid/README.md b/plasmoid/README.md
+index ae04dd5..34c1e8f 100644
+--- a/plasmoid/README.md
++++ b/plasmoid/README.md
+@@ -57,22 +57,7 @@ kpackagetool6 -t Plasma/Applet -r org.doubletake.plasmoid
+ 
+ ## Autostart
+ 
+-Create a systemd user service for the daemon:
+-
+-```ini
+-# ~/.config/systemd/user/doubletake.service
+-[Unit]
+-Description=doubletake AirPlay Mirroring Daemon
+-After=graphical-session.target
+-
+-[Service]
+-ExecStart=/usr/local/bin/doubletake -daemonize -creds %h/.config/doubletake/credentials.json
+-Restart=on-failure
+-RestartSec=5
+-
+-[Install]
+-WantedBy=graphical-session.target
+-```
++`make install` installs a systemd user service for the daemon. Enable it with:
+ 
+ ```sh
+ systemctl --user enable --now doubletake.service
+diff --git a/systemd/doubletake.service.in b/systemd/doubletake.service.in
+new file mode 100644
+index 0000000..4abdc92
+--- /dev/null
++++ b/systemd/doubletake.service.in
+@@ -0,0 +1,11 @@
++[Unit]
++Description=doubletake AirPlay Mirroring Daemon
++After=graphical-session.target
++
++[Service]
++ExecStart=@bindir@/doubletake -daemonize -creds %h/.config/doubletake/credentials.json
++Restart=on-failure
++RestartSec=5
++
++[Install]
++WantedBy=graphical-session.target
